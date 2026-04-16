@@ -6,6 +6,7 @@ export default class HttpClient {
             credentials:   options.credentials  ?? "same-origin",
             authHeaders:   {},
             staticHeaders: options.staticHeaders ?? {},
+            onError:       null,
         };
 
         if (options.authHeaders) {
@@ -79,6 +80,11 @@ export default class HttpClient {
 
     clearStaticHeaders() {
         this.options.staticHeaders = {};
+        return this;
+    }
+
+    onError(callback) {
+        this.options.onError = callback;
         return this;
     }
 
@@ -162,6 +168,11 @@ export default class HttpClient {
                 timeoutError.url  = url;
                 console.debug("HttpClient Request Timeout:", url);
                 throw timeoutError;
+            }
+            if (this.options.onError && !requestOptions._isRetry) {
+                return this.options.onError(error, () =>
+                    this.request(endpoint, { ...requestOptions, _isRetry: true })
+                );
             }
             console.debug("HttpClient Request Error:", error);
             throw error;
@@ -269,7 +280,7 @@ export default class HttpClient {
         const prefix = namespace.startsWith('/') ? namespace : `/${namespace}`;
 
         const nonRoutingMethods = new Set([
-            'constructor', 'setTimeout', 'setCredentials',
+            'constructor', 'setTimeout', 'setCredentials', 'onError',
             'setAuthToken', 'setAuthHeader', 'setAuthHeaders', 'clearAuth',
             'setStaticHeader', 'setStaticHeaders', 'clearStaticHeaders',
             'buildHeaders', 'buildURL', 'handleResponse', 'namespace',

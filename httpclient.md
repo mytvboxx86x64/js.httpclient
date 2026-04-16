@@ -229,6 +229,23 @@ httpclient.clearAuth();           // Remove all auth headers
 httpclient.clearStaticHeaders();  // Remove all static headers
 ```
 
+## Error Callback
+
+Register a callback to intercept errors before they are thrown. The callback receives the error and a `retry` function that re-runs the original request.
+
+```javascript
+httpclient.onError(async (error, retry) => {
+    if (error.status === 401) {
+        const newToken = await myAuthService.refreshToken();
+        httpclient.setAuthToken(newToken);
+        return retry();
+    }
+    throw error; // re-throw anything you don't handle
+});
+```
+
+The callback is only called once per request — if the retry also fails, the error is thrown without calling the callback again.
+
 ## Credentials
 
 Controls whether cookies are sent with requests. Default is `"same-origin"`.
