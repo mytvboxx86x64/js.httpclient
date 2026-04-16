@@ -172,20 +172,17 @@ Returns `{ filename, size }` after triggering the browser download.
 
 ## Authentication
 
-### Token
+### Token (Authorization header)
 
 ```javascript
-// Default — Authorization: Bearer
 httpclient.setAuthToken('eyJhbGciOiJIUzI1NiIs...');
 // -> Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
-// Custom scheme
-httpclient.setAuthToken('abc123', 'Authorization', 'Token');
+httpclient.setAuthToken('abc123', 'Token');
 // -> Authorization: Token abc123
 
-// Custom header, no prefix
-httpclient.setAuthToken('abc123', 'X-API-Key', '');
-// -> X-API-Key: abc123
+httpclient.setAuthToken('abc123', '');
+// -> Authorization: abc123
 ```
 
 ### Custom Auth Header

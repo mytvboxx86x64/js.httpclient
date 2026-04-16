@@ -30,16 +30,15 @@ export default class HttpClient {
     }
 
     /**
-     * Set a token-based auth header
-     * @example api.setAuthToken('eyJhbGci...')
-     * // -> Authorization: Bearer eyJhbGci...
-     * @example api.setAuthToken('key', 'X-API-Key', '')
-     * // -> X-API-Key: key
+     * Set the Authorization header with an optional scheme prefix
+     * @example api.setAuthToken('eyJhbGci...')              // Authorization: Bearer eyJhbGci...
+     * @example api.setAuthToken('abc123', 'Token')          // Authorization: Token abc123
+     * @example api.setAuthToken('abc123', '')               // Authorization: abc123
      */
-    setAuthToken(token, headerName = "Authorization", prefix = "Bearer") {
+    setAuthToken(token, prefix = "Bearer") {
         this.options.authHeaders = {
             ...this.options.authHeaders,
-            [headerName]: prefix ? `${prefix} ${token}` : token,
+            Authorization: prefix ? `${prefix} ${token}` : token,
         };
         return this;
     }
