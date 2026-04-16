@@ -27,6 +27,7 @@ export default class HttpClient {
      */
     setBearerToken(token, headerName = "Authorization", prefix = "Bearer") {
         this.authHeaders = {
+            ...this.authHeaders,
             [headerName]: prefix ? `${prefix} ${token}` : token,
         };
         return this;
@@ -38,7 +39,7 @@ export default class HttpClient {
      * // -> X-HttpClient-Key: my-key
      */
     setAuthHeader(headerName, value) {
-        this.authHeaders = { [headerName]: value };
+        this.authHeaders = { ...this.authHeaders, [headerName]: value };
         return this;
     }
 
@@ -47,7 +48,7 @@ export default class HttpClient {
      * @example api.setAuthHeaders({ 'Authorization': 'Bearer token', 'X-Refresh': 'refresh' })
      */
     setAuthHeaders(headers) {
-        this.authHeaders = { ...headers };
+        this.authHeaders = { ...this.authHeaders, ...headers };
         return this;
     }
 
@@ -56,6 +57,14 @@ export default class HttpClient {
      */
     clearAuth() {
         this.authHeaders = {};
+        return this;
+    }
+
+    /**
+     * Set a single static header
+     */
+    setStaticHeader(headerName, value) {
+        this.staticHeaders = { ...this.staticHeaders, [headerName]: value };
         return this;
     }
 
@@ -125,7 +134,7 @@ export default class HttpClient {
 
         if (!response.ok) {
             const error = new Error(
-                data.message ||
+                (typeof data === 'string' ? data : data?.message) ||
                     `HTTP ${response.status}: ${response.statusText}`,
             );
             error.status = response.status;
@@ -165,6 +174,7 @@ export default class HttpClient {
                 status: response.status,
                 statusText: response.statusText,
             });
+            if (options._rawResponse) return response;
             return await this.handleResponse(response);
         } catch (error) {
             if (error.name === "AbortError") {
@@ -239,78 +249,37 @@ export default class HttpClient {
      */
     async download(endpoint, params = {}, filename = null, options = {}) {
         const queryString = new URLSearchParams(params).toString();
-        const url = this.buildURL(queryString ? `${endpoint}?${queryString}` : endpoint);
-        const headers = this.buildHeaders(options.headers, true);
+        const url = queryString ? `${endpoint}?${queryString}` : endpoint;
 
-        const controller = new AbortController();
-        const timeoutId = globalThis.setTimeout(
-            () => controller.abort(),
-            options.timeout ?? this.timeout,
-        );
-
-        const config = {
-            ...this.defaultOptions,
+        const response = await this.request(url, {
             ...options,
             method: "GET",
-            headers,
-            signal: controller.signal,
-        };
+            skipContentType: true,
+            _rawResponse: true,
+        });
 
-        console.debug("HttpClient Download:", { url, config });
+        const blob = await response.blob();
 
-        try {
-            const response = await fetch(url, config);
-            console.debug("HttpClient Download Response:", {
-                url,
-                status: response.status,
-                statusText: response.statusText,
-            });
-
-            if (!response.ok) {
-                const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-                error.status = response.status;
-                throw error;
+        let downloadFilename = filename;
+        if (!downloadFilename) {
+            const contentDisposition = response.headers.get("content-disposition");
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (match) downloadFilename = match[1].replace(/['"]/g, '');
             }
-
-            const blob = await response.blob();
-
-            // Get filename from Content-Disposition header if not provided
-            let downloadFilename = filename;
-            if (!downloadFilename) {
-                const contentDisposition = response.headers.get("content-disposition");
-                if (contentDisposition) {
-                    const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                    if (match) {
-                        downloadFilename = match[1].replace(/['"]/g, '');
-                    }
-                }
-                downloadFilename = downloadFilename || 'download';
-            }
-
-            // Trigger browser download
-            const blobUrl = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = downloadFilename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(blobUrl);
-
-            return { filename: downloadFilename, size: blob.size };
-        } catch (error) {
-            if (error.name === "AbortError") {
-                const timeoutError = new Error(`Download timeout after ${options.timeout ?? this.timeout}ms`);
-                timeoutError.name = "TimeoutError";
-                timeoutError.url = url;
-                console.debug("HttpClient Download Timeout:", url);
-                throw timeoutError;
-            }
-            console.debug("HttpClient Download Error:", error);
-            throw error;
-        } finally {
-            globalThis.clearTimeout(timeoutId);
+            downloadFilename = downloadFilename || 'download';
         }
+
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = downloadFilename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+
+        return { filename: downloadFilename, size: blob.size };
     }
 
     /**
@@ -322,10 +291,12 @@ export default class HttpClient {
         const parent = this;
         const prefix = namespace.startsWith('/') ? namespace : `/${namespace}`;
 
+        const nonRoutingMethods = new Set(['constructor', 'setTimeout', 'setBearerToken', 'setAuthHeader', 'setAuthHeaders', 'clearAuth', 'setStaticHeader', 'setStaticHeaders', 'clearStaticHeaders', 'buildHeaders', 'buildURL', 'handleResponse', 'namespace']);
+
         return new Proxy(this, {
             get(target, prop) {
                 const value = target[prop];
-                if (typeof value === 'function' && ['request', 'get', 'post', 'put', 'patch', 'delete', 'upload', 'download'].includes(prop)) {
+                if (typeof value === 'function' && !nonRoutingMethods.has(prop)) {
                     return (endpoint, ...args) => {
                         const prefixedEndpoint = `${prefix}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
                         return value.call(parent, prefixedEndpoint, ...args);
@@ -336,46 +307,4 @@ export default class HttpClient {
         });
     }
 
-    /**
-     * Create an API structure where each namespace automatically gets http methods
-     * @param {Object} structure - Object with namespaces as keys and endpoint methods as values
-     * @returns {Object} API object with namespaced methods
-     * @example
-     * httpClient.createApi({
-     *     administration: {
-     *         isAlive() { return this.get('/IsAlive'); }
-     *     },
-     *     config: {
-     *         users: {
-     *             getAll() { return this.get('/List'); } // -> /config/users/List
-     *         }
-     *     }
-     * });
-     */
-    createApi(structure, parentPath = '') {
-        const result = {};
-        for (const [key, value] of Object.entries(structure)) {
-            const currentPath = parentPath ? `${parentPath}/${key}` : key;
-
-            // Check if value has any functions (methods)
-            const hasMethods = Object.values(value).some(v => typeof v === 'function');
-
-            if (hasMethods) {
-                // This level has methods, create scoped client
-                const scopedClient = this.namespace(currentPath);
-                // Bind user methods to scopedClient so this.get/post/delete refer to HTTP methods
-                const boundMethods = {};
-                for (const [methodName, method] of Object.entries(value)) {
-                    if (typeof method === 'function') {
-                        boundMethods[methodName] = method.bind(scopedClient);
-                    }
-                }
-                result[key] = { ...scopedClient, ...boundMethods };
-            } else {
-                // No methods at this level, recurse deeper
-                result[key] = this.createApi(value, currentPath);
-            }
-        }
-        return result;
-    }
 }

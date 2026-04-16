@@ -7,23 +7,50 @@ A flexible HTTP client with configurable authentication and request timeout supp
 ```javascript
 import HttpClient from './httpclient.js';
 
-export const httpclient = new HttpClient('https://httpclient.example.com');
+const httpclient = new HttpClient('https://api.example.com');
+```
+
+**Option 1 — explicit paths** (simplest, full autocomplete):
+
+```javascript
+export const endpoints = {
+    auth: {
+        login:   (username, password) => httpclient.post('api/auth/login', { username, password }),
+        refresh: (refreshToken)       => httpclient.post('api/auth/refresh', { refreshToken }),
+    },
+    users: {
+        getAll:  ()           => httpclient.get('api/users'),
+        getById: (id)         => httpclient.get(`api/users/${id}`),
+        create:  (data)       => httpclient.post('api/users', data),
+        update:  (id, data)   => httpclient.put(`api/users/${id}`, data),
+        delete:  (id)         => httpclient.delete(`api/users/${id}`),
+    },
+};
+```
+
+**Option 2 — namespace()** (less repetition for deep paths):
+
+```javascript
+const auth  = httpclient.namespace('api/auth');
+const users = httpclient.namespace('api/users');
 
 export const endpoints = {
     auth: {
-        login: (username, password) => httpclient.post('api/auth/login', { username, password }),
-        refresh: (refreshToken) => httpclient.post('api/auth/refresh', { refreshToken }),
+        login:   (username, password) => auth.post('/login', { username, password }),
+        refresh: (refreshToken)       => auth.post('/refresh', { refreshToken }),
     },
     users: {
-        getAll: () => httpclient.get('api/users'),
-        getById: (id) => httpclient.get(`api/users/${id}`),
-        create: (data) => httpclient.post('api/users', data),
-        update: (id, data) => httpclient.put(`api/users/${id}`, data),
-        delete: (id) => httpclient.delete(`api/users/${id}`),
+        getAll:  ()         => users.get('/'),
+        getById: (id)       => users.get(`/${id}`),
+        create:  (data)     => users.post('/', data),
+        update:  (id, data) => users.put(`/${id}`, data),
+        delete:  (id)       => users.delete(`/${id}`),
     },
 };
+```
 
-// Usage - VSCode autocomplete works
+```javascript
+// Usage — VSCode autocomplete works for both patterns
 await endpoints.auth.login('user', 'pass');
 await endpoints.users.getAll();
 ```
@@ -142,12 +169,20 @@ httpclient.setBearerToken('token', 'X-Auth', 'Token');
 
 ### Custom Auth Header
 
+Merges into existing auth headers rather than replacing them.
+
 ```javascript
 httpclient.setAuthHeader('X-HttpClient-Key', 'my-api-key');
 // -> X-HttpClient-Key: my-api-key
+
+// Calling twice accumulates — does not overwrite previous keys
+httpclient.setAuthHeader('X-Tenant', 'tenant-123');
+// Both X-HttpClient-Key and X-Tenant are now set
 ```
 
 ### Multiple Auth Headers
+
+Merges into existing auth headers rather than replacing them.
 
 ```javascript
 httpclient.setAuthHeaders({
@@ -159,6 +194,10 @@ httpclient.setAuthHeaders({
 ### Static Headers
 
 ```javascript
+// Single
+httpclient.setStaticHeader('X-Tenant-ID', 'tenant-123');
+
+// Multiple
 httpclient.setStaticHeaders({
     'X-Tenant-ID': 'tenant-123',
     'X-Client-Version': '1.0.0'
@@ -168,8 +207,8 @@ httpclient.setStaticHeaders({
 ### Clear Authentication
 
 ```javascript
-httpclient.clearAuth();           // Clear auth headers
-httpclient.clearStaticHeaders();  // Clear static headers
+httpclient.clearAuth();           // Remove all auth headers
+httpclient.clearStaticHeaders();  // Remove all static headers
 ```
 
 ## Timeout
@@ -219,9 +258,9 @@ await httpclient.get('/users', {}, {
 try {
     const user = await httpclient.get('/users/999');
 } catch (error) {
-    console.error(error.message);  // "HTTP 404: Not Found"
+    console.error(error.message);  // JSON: uses error.message field; plain-text: uses body string; fallback: "HTTP 404: Not Found"
     console.error(error.status);   // 404
-    console.error(error.data);     // Response body (if JSON)
+    console.error(error.data);     // Parsed response body (JSON object or plain string)
 }
 ```
 
@@ -248,81 +287,9 @@ await httpclient.get('/users');  // -> https://httpclient.example.com/users
 await httpclient.get('https://other-httpclient.com/data');  // -> https://other-httpclient.com/data
 ```
 
-## Namespaced API
+## Namespace
 
-Use `createApi()` to organize endpoints by namespace. Each namespace automatically gets all HTTP methods (`get`, `post`, `put`, `patch`, `delete`, `upload`) with the namespace prefixed to all requests.
-
-```javascript
-import HttpClient from './httpclient.js';
-
-const httpClient = new HttpClient('https://api.example.com/api');
-
-export const api = httpClient.createApi({
-    administration: {
-        isAlive() {
-            return this.get('/IsAlive');
-            // -> GET /api/administration/IsAlive
-        },
-    },
-    users: {
-        getAll() {
-            return this.get('/List');
-            // -> GET /api/users/List
-        },
-        create(data) {
-            return this.post('/Create', data);
-            // -> POST /api/users/Create
-        },
-    },
-});
-
-// Usage
-await api.administration.isAlive();
-await api.users.getAll();
-await api.users.create({ name: 'John' });
-```
-
-### Nested Namespaces
-
-Nested objects automatically build the full path:
-
-```javascript
-export const api = httpClient.createApi({
-    config: {
-        processCodeGroups: {
-            getAll() {
-                return this.get('/List');
-                // -> GET /api/config/processCodeGroups/List
-            },
-            create(data) {
-                return this.post('/Create', data);
-                // -> POST /api/config/processCodeGroups/Create
-            },
-        },
-        settings: {
-            get() {
-                return this.get('/Current');
-                // -> GET /api/config/settings/Current
-            },
-        },
-    },
-});
-
-// Usage
-await api.config.processCodeGroups.getAll();
-await api.config.settings.get();
-```
-
-### Direct Namespace Usage
-
-You can also use `namespace()` standalone:
-
-```javascript
-const adminApi = httpClient.namespace('administration');
-
-await adminApi.get('/IsAlive');    // -> /api/administration/IsAlive
-await adminApi.post('/Create', {});  // -> /api/administration/Create
-```
+`namespace(prefix)` returns a scoped proxy that prepends a path to every HTTP call. See [Quick Start](#quick-start) Option 2 for the recommended usage pattern.
 
 ## Debug Logging
 
