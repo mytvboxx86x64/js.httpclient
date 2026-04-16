@@ -693,7 +693,7 @@
         const baseURL = document.getElementById('cfg-baseurl').value.trim();
         const timeout = parseInt(document.getElementById('cfg-timeout').value) || 30000;
 
-        client = new HttpClient(baseURL).setTimeout(timeout);
+        client = new HttpClient(baseURL, { timeout });
         window._client = client;
 
         // Auth
@@ -732,16 +732,16 @@
         const items = [];
 
         items.push(`<span class="config-badge active"><span class="dot active"></span>base: ${client.baseURL}</span>`);
-        items.push(`<span class="config-badge active"><span class="dot active"></span>timeout: ${client.timeout}ms</span>`);
+        items.push(`<span class="config-badge active"><span class="dot active"></span>timeout: ${client.options.timeout}ms</span>`);
 
-        const authKeys = Object.keys(client.authHeaders);
+        const authKeys = Object.keys(client.options.authHeaders);
         if (authKeys.length) {
             items.push(`<span class="config-badge active"><span class="dot active"></span>auth: ${authKeys.join(', ')}</span>`);
         } else {
             items.push(`<span class="config-badge"><span class="dot"></span>auth: none</span>`);
         }
 
-        const staticKeys = Object.keys(client.staticHeaders);
+        const staticKeys = Object.keys(client.options.staticHeaders);
         if (staticKeys.length) {
             items.push(`<span class="config-badge active"><span class="dot active"></span>static: ${staticKeys.join(', ')}</span>`);
         }

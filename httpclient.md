@@ -58,12 +58,28 @@ await endpoints.users.getAll();
 ## Constructor
 
 ```javascript
-new HttpClient(baseURL)
+new HttpClient(baseURL, options?)
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `baseURL` | string | Base URL for all requests |
+| Option | Type | Description |
+|---|---|---|
+| `timeout` | number | Request timeout in ms (default: 30000) |
+| `credentials` | string | Credentials mode (default: `"same-origin"`) |
+| `authHeaders` | object | Sets auth headers (one or many) |
+| `staticHeaders` | object | Sets static headers |
+
+```javascript
+// Minimal
+const httpclient = new HttpClient('https://api.example.com');
+
+// With options
+const httpclient = new HttpClient('https://api.example.com', {
+    timeout:       60000,
+    credentials:   'include',
+    authHeaders:   { Authorization: 'Bearer eyJhbGci...' },
+    staticHeaders: { 'X-Tenant-ID': 'tenant-123' },
+});
+```
 
 ## HTTP Methods
 
@@ -156,15 +172,20 @@ Returns `{ filename, size }` after triggering the browser download.
 
 ## Authentication
 
-### Bearer Token
+### Token
 
 ```javascript
-httpclient.setBearerToken('eyJhbGciOiJIUzI1NiIs...');
+// Default — Authorization: Bearer
+httpclient.setAuthToken('eyJhbGciOiJIUzI1NiIs...');
 // -> Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
-// Custom header name and prefix
-httpclient.setBearerToken('token', 'X-Auth', 'Token');
-// -> X-Auth: Token token
+// Custom scheme
+httpclient.setAuthToken('abc123', 'Authorization', 'Token');
+// -> Authorization: Token abc123
+
+// Custom header, no prefix
+httpclient.setAuthToken('abc123', 'X-API-Key', '');
+// -> X-API-Key: abc123
 ```
 
 ### Custom Auth Header
@@ -210,6 +231,22 @@ httpclient.setStaticHeaders({
 httpclient.clearAuth();           // Remove all auth headers
 httpclient.clearStaticHeaders();  // Remove all static headers
 ```
+
+## Credentials
+
+Controls whether cookies are sent with requests. Default is `"same-origin"`.
+
+```javascript
+httpclient.setCredentials('include');
+// Required for cross-origin APIs that use cookie/session auth
+// e.g. .NET Framework Web API with Forms Authentication or Windows Auth
+```
+
+| Mode | Behaviour |
+|---|---|
+| `"same-origin"` | Cookies sent only when API and app share the same origin (default) |
+| `"include"` | Cookies always sent — required for cross-origin session-based APIs |
+| `"omit"` | Cookies never sent |
 
 ## Timeout
 
@@ -269,10 +306,11 @@ try {
 Configuration methods return `this` for chaining:
 
 ```javascript
-const api = new HttpClient('https://httpclient.example.com')
-    .setTimeout(60000)
-    .setBearerToken(token)
-    .setStaticHeaders({ 'X-Tenant': 'foo' });
+const api = new HttpClient('https://api.example.com', {
+    timeout:       60000,
+    bearerToken:   token,
+    staticHeaders: { 'X-Tenant': 'foo' },
+});
 ```
 
 ## Full URL Support
@@ -281,7 +319,7 @@ Endpoints starting with `http://` or `https://` bypass the base URL:
 
 ```javascript
 // Uses baseURL
-await httpclient.get('/users');  // -> https://httpclient.example.com/users
+await httpclient.get('/users');  // -> https://api.example.com/users
 
 // Full URL (ignores baseURL)
 await httpclient.get('https://other-httpclient.com/data');  // -> https://other-httpclient.com/data

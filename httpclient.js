@@ -1,33 +1,44 @@
 export default class HttpClient {
-    constructor(baseURL) {
+    constructor(baseURL, options = {}) {
         this.baseURL = baseURL;
-        this.timeout = 30000; // 30 seconds default
-        this.authHeaders = {};
-        this.staticHeaders = {};
-        this.defaultOptions = {
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "same-origin",
+        this.options = {
+            timeout:       options.timeout      ?? 30000,
+            credentials:   options.credentials  ?? "same-origin",
+            authHeaders:   {},
+            staticHeaders: options.staticHeaders ?? {},
         };
+
+        if (options.authHeaders) {
+            this.setAuthHeaders(options.authHeaders);
+        }
     }
 
-    /**
-     * Set request timeout
-     */
     setTimeout(ms) {
-        this.timeout = ms;
+        this.options.timeout = ms;
         return this;
     }
 
     /**
-     * Set bearer token authentication
-     * @example api.setBearerToken('eyJhbGci...')
-     * // -> Authorization: Bearer eyJhbGci...
+     * Set credentials mode for all requests
+     * "same-origin" (default) — send cookies only to same origin
+     * "include"               — always send cookies (required for cross-origin session/cookie auth e.g. .NET Framework Web API)
+     * "omit"                  — never send cookies
      */
-    setBearerToken(token, headerName = "Authorization", prefix = "Bearer") {
-        this.authHeaders = {
-            ...this.authHeaders,
+    setCredentials(mode) {
+        this.options.credentials = mode;
+        return this;
+    }
+
+    /**
+     * Set a token-based auth header
+     * @example api.setAuthToken('eyJhbGci...')
+     * // -> Authorization: Bearer eyJhbGci...
+     * @example api.setAuthToken('key', 'X-API-Key', '')
+     * // -> X-API-Key: key
+     */
+    setAuthToken(token, headerName = "Authorization", prefix = "Bearer") {
+        this.options.authHeaders = {
+            ...this.options.authHeaders,
             [headerName]: prefix ? `${prefix} ${token}` : token,
         };
         return this;
@@ -35,11 +46,11 @@ export default class HttpClient {
 
     /**
      * Set custom header authentication
-     * @example api.setAuthHeader('X-HttpClient-Key', 'my-key')
-     * // -> X-HttpClient-Key: my-key
+     * @example api.setAuthHeader('X-API-Key', 'my-key')
+     * // -> X-API-Key: my-key
      */
     setAuthHeader(headerName, value) {
-        this.authHeaders = { ...this.authHeaders, [headerName]: value };
+        this.options.authHeaders = { ...this.options.authHeaders, [headerName]: value };
         return this;
     }
 
@@ -48,53 +59,35 @@ export default class HttpClient {
      * @example api.setAuthHeaders({ 'Authorization': 'Bearer token', 'X-Refresh': 'refresh' })
      */
     setAuthHeaders(headers) {
-        this.authHeaders = { ...this.authHeaders, ...headers };
+        this.options.authHeaders = { ...this.options.authHeaders, ...headers };
         return this;
     }
 
-    /**
-     * Clear authentication headers
-     */
     clearAuth() {
-        this.authHeaders = {};
+        this.options.authHeaders = {};
         return this;
     }
 
-    /**
-     * Set a single static header
-     */
     setStaticHeader(headerName, value) {
-        this.staticHeaders = { ...this.staticHeaders, [headerName]: value };
+        this.options.staticHeaders = { ...this.options.staticHeaders, [headerName]: value };
         return this;
     }
 
-    /**
-     * Set static headers (HttpClient keys, tenant IDs, etc.)
-     */
     setStaticHeaders(headers) {
-        this.staticHeaders = {
-            ...this.staticHeaders,
-            ...headers,
-        };
+        this.options.staticHeaders = { ...this.options.staticHeaders, ...headers };
         return this;
     }
 
-    /**
-     * Clear static headers
-     */
     clearStaticHeaders() {
-        this.staticHeaders = {};
+        this.options.staticHeaders = {};
         return this;
     }
 
-    /**
-     * Build complete headers
-     */
     buildHeaders(customHeaders = {}, skipContentType = false) {
         const headers = {
-            ...this.defaultOptions.headers,
-            ...this.staticHeaders,
-            ...this.authHeaders,
+            "Content-Type": "application/json",
+            ...this.options.staticHeaders,
+            ...this.options.authHeaders,
             ...customHeaders,
         };
 
@@ -105,27 +98,17 @@ export default class HttpClient {
         return headers;
     }
 
-    /**
-     * Build full URL
-     */
     buildURL(endpoint) {
         if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
             return endpoint;
         }
 
-        const cleanEndpoint = endpoint.startsWith("/")
-            ? endpoint.slice(1)
-            : endpoint;
-        const cleanBaseURL = this.baseURL.endsWith("/")
-            ? this.baseURL.slice(0, -1)
-            : this.baseURL;
+        const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
+        const cleanBaseURL  = this.baseURL.endsWith("/") ? this.baseURL.slice(0, -1) : this.baseURL;
 
         return `${cleanBaseURL}/${cleanEndpoint}`;
     }
 
-    /**
-     * Handle response
-     */
     async handleResponse(response) {
         const contentType = response.headers.get("content-type");
         const isJSON = contentType && contentType.includes("application/json");
@@ -145,22 +128,19 @@ export default class HttpClient {
         return data;
     }
 
-    /**
-     * Generic request method
-     */
-    async request(endpoint, options = {}) {
-        const url = this.buildURL(endpoint);
-        const headers = this.buildHeaders(options.headers, options.skipContentType);
+    async request(endpoint, requestOptions = {}) {
+        const url     = this.buildURL(endpoint);
+        const headers = this.buildHeaders(requestOptions.headers, requestOptions.skipContentType);
 
         const controller = new AbortController();
-        const timeoutId = globalThis.setTimeout(
+        const timeoutId  = globalThis.setTimeout(
             () => controller.abort(),
-            options.timeout ?? this.timeout,
+            requestOptions.timeout ?? this.options.timeout,
         );
 
         const config = {
-            ...this.defaultOptions,
-            ...options,
+            credentials: this.options.credentials,
+            ...requestOptions,
             headers,
             signal: controller.signal,
         };
@@ -174,13 +154,13 @@ export default class HttpClient {
                 status: response.status,
                 statusText: response.statusText,
             });
-            if (options._rawResponse) return response;
+            if (requestOptions._rawResponse) return response;
             return await this.handleResponse(response);
         } catch (error) {
             if (error.name === "AbortError") {
-                const timeoutError = new Error(`Request timeout after ${options.timeout ?? this.timeout}ms`);
+                const timeoutError = new Error(`Request timeout after ${requestOptions.timeout ?? this.options.timeout}ms`);
                 timeoutError.name = "TimeoutError";
-                timeoutError.url = url;
+                timeoutError.url  = url;
                 console.debug("HttpClient Request Timeout:", url);
                 throw timeoutError;
             }
@@ -191,7 +171,6 @@ export default class HttpClient {
         }
     }
 
-    // HTTP Methods
     async get(endpoint, params = {}, options = {}) {
         const queryString = new URLSearchParams(params).toString();
         const url = queryString ? `${endpoint}?${queryString}` : endpoint;
@@ -231,7 +210,6 @@ export default class HttpClient {
     }
 
     async upload(endpoint, formData, options = {}) {
-        // Pass flag to skip Content-Type (let browser set multipart boundary)
         return this.request(endpoint, {
             ...options,
             method: "POST",
@@ -271,8 +249,8 @@ export default class HttpClient {
         }
 
         const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
+        const link    = document.createElement('a');
+        link.href     = blobUrl;
         link.download = downloadFilename;
         document.body.appendChild(link);
         link.click();
@@ -284,14 +262,19 @@ export default class HttpClient {
 
     /**
      * Create a namespace-scoped client that prefixes all endpoints
-     * @param {string} namespace - The namespace to prefix (e.g., 'administration')
-     * @returns {HttpClient} A proxy that prefixes all requests with the namespace
+     * @param {string} namespace - The namespace to prefix (e.g., 'users')
+     * @returns {Proxy} A proxy that prefixes all HTTP method calls with the namespace
      */
     namespace(namespace) {
         const parent = this;
         const prefix = namespace.startsWith('/') ? namespace : `/${namespace}`;
 
-        const nonRoutingMethods = new Set(['constructor', 'setTimeout', 'setBearerToken', 'setAuthHeader', 'setAuthHeaders', 'clearAuth', 'setStaticHeader', 'setStaticHeaders', 'clearStaticHeaders', 'buildHeaders', 'buildURL', 'handleResponse', 'namespace']);
+        const nonRoutingMethods = new Set([
+            'constructor', 'setTimeout', 'setCredentials',
+            'setAuthToken', 'setAuthHeader', 'setAuthHeaders', 'clearAuth',
+            'setStaticHeader', 'setStaticHeaders', 'clearStaticHeaders',
+            'buildHeaders', 'buildURL', 'handleResponse', 'namespace',
+        ]);
 
         return new Proxy(this, {
             get(target, prop) {
@@ -306,5 +289,4 @@ export default class HttpClient {
             }
         });
     }
-
 }
