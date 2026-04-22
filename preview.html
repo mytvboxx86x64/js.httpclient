@@ -3,332 +3,95 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HttpClient — Function Preview</title>
+    <title>HttpClient — Preview</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg: #0f1117;
-            --surface: #1a1d27;
-            --border: #2a2d3a;
-            --accent: #6366f1;
-            --accent-dim: #4338ca;
-            --green: #22c55e;
-            --red: #ef4444;
-            --yellow: #f59e0b;
-            --text: #e2e8f0;
-            --muted: #64748b;
-            --code-bg: #0d1117;
-            --radius: 8px;
+            --bg:       #0f1117;
+            --surface:  #1a1d27;
+            --border:   #2a2d3a;
+            --accent:   #6366f1;
+            --green:    #22c55e;
+            --red:      #ef4444;
+            --text:     #e2e8f0;
+            --muted:    #64748b;
+            --code-bg:  #0d1117;
+            --radius:   8px;
         }
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            font-size: 14px;
-            min-height: 100vh;
-        }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
 
-        header {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 10px; }
+        header h1 { font-size: 16px; font-weight: 600; }
+        .badge { background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
 
-        header h1 { font-size: 18px; font-weight: 600; }
-        header .badge {
-            background: var(--accent);
-            color: #fff;
-            font-size: 11px;
-            padding: 2px 8px;
-            border-radius: 99px;
-            font-weight: 500;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 220px 1fr 340px;
-            height: calc(100vh - 57px);
-        }
+        .layout { display: grid; grid-template-columns: 200px 1fr 360px; height: calc(100vh - 49px); }
 
         /* Sidebar */
-        .sidebar {
-            background: var(--surface);
-            border-right: 1px solid var(--border);
-            overflow-y: auto;
-            padding: 12px 0;
-        }
-
-        .sidebar-section {
-            padding: 6px 16px 2px;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: .08em;
-            color: var(--muted);
-            font-weight: 600;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 7px 16px;
-            cursor: pointer;
-            border-radius: 0;
-            transition: background .1s;
-            border-left: 2px solid transparent;
-            font-size: 13px;
-        }
-
+        .sidebar { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 10px 0; }
+        .sidebar-section { padding: 8px 14px 3px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+        .sidebar-item { display: flex; align-items: center; gap: 8px; padding: 7px 14px; cursor: pointer; border-left: 2px solid transparent; font-size: 13px; transition: background .1s; }
         .sidebar-item:hover { background: rgba(99,102,241,.08); }
-        .sidebar-item.active {
-            background: rgba(99,102,241,.14);
-            border-left-color: var(--accent);
-            color: #a5b4fc;
-        }
-
-        .method-badge {
-            font-size: 10px;
-            font-weight: 700;
-            padding: 1px 5px;
-            border-radius: 3px;
-            min-width: 42px;
-            text-align: center;
-            font-family: monospace;
-        }
+        .sidebar-item.active { background: rgba(99,102,241,.14); border-left-color: var(--accent); color: #a5b4fc; }
+        .mb { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; min-width: 38px; text-align: center; font-family: monospace; }
         .get    { background: #14532d; color: #86efac; }
         .post   { background: #1e3a5f; color: #93c5fd; }
         .put    { background: #451a03; color: #fcd34d; }
         .patch  { background: #3b0764; color: #d8b4fe; }
         .delete { background: #450a0a; color: #fca5a5; }
-        .upload { background: #164e63; color: #67e8f9; }
+        .upl    { background: #164e63; color: #67e8f9; }
         .dl     { background: #134e4a; color: #6ee7b7; }
-        .cfg    { background: #1c1c1c; color: #94a3b8; }
+        .cfg    { background: #1c1917; color: #94a3b8; }
 
-        /* Main panel */
-        .main {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+        /* Main */
+        .main { display: flex; flex-direction: column; overflow: hidden; }
+        .panel { flex: 1; overflow-y: auto; padding: 20px; display: none; }
+        .panel.active { display: block; }
+        .panel-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .panel-desc  { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
 
-        .panel-header {
-            padding: 16px 20px 12px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .panel-header h2 { font-size: 16px; font-weight: 600; }
-        .panel-header p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-        .panel-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        label {
-            display: block;
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 5px;
-            margin-top: 14px;
-        }
+        label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; margin-top: 14px; }
         label:first-child { margin-top: 0; }
-
-        input, textarea, select {
-            width: 100%;
-            background: var(--code-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            color: var(--text);
-            padding: 8px 10px;
-            font-size: 13px;
-            font-family: 'Cascadia Code', 'Fira Mono', monospace;
-            outline: none;
-            transition: border-color .15s;
-        }
-        input:focus, textarea:focus, select:focus {
-            border-color: var(--accent);
-        }
+        input, textarea, select { width: 100%; background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 8px 10px; font-size: 13px; font-family: 'Cascadia Code', 'Fira Mono', monospace; outline: none; transition: border-color .15s; }
+        input:focus, textarea:focus, select:focus { border-color: var(--accent); }
         textarea { resize: vertical; min-height: 80px; }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: var(--radius);
-            border: none;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: opacity .15s, transform .1s;
-        }
-        .btn:active { transform: scale(.97); }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity .15s; }
+        .btn:active { opacity: .75; }
         .btn-primary { background: var(--accent); color: #fff; }
-        .btn-primary:hover { opacity: .88; }
-        .btn-ghost { background: var(--border); color: var(--text); }
-        .btn-ghost:hover { opacity: .8; }
+        .btn-ghost   { background: var(--border); color: var(--text); }
+        .row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
+        .sep { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+        .hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
 
-        .row { display: flex; gap: 8px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+        /* Config status pills */
+        .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+        .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 99px; font-size: 11px; color: var(--muted); font-family: monospace; }
+        .pill.on { border-color: var(--green); color: var(--green); }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-        /* Config section */
-        .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .config-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            background: var(--code-bg);
-            border: 1px solid var(--border);
-            border-radius: 99px;
-            font-size: 12px;
-            color: var(--muted);
-            font-family: monospace;
-        }
-        .config-badge.active { border-color: var(--green); color: var(--green); }
+        /* Output */
+        .output-panel { border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
+        .output-header { padding: 11px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+        .output-body { flex: 1; overflow-y: auto; padding: 14px; }
+        .status-pill { padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; font-family: monospace; }
+        .ok  { background: #14532d; color: #86efac; }
+        .err { background: #450a0a; color: #fca5a5; }
+        .pending { background: #1e3a5f; color: #93c5fd; }
 
-        .dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: var(--muted);
-        }
-        .dot.active { background: var(--green); }
+        .log { border-left: 2px solid var(--border); padding: 6px 10px; border-radius: 0 4px 4px 0; }
+        .log.success { border-left-color: var(--green); }
+        .log.failure { border-left-color: var(--red); }
+        .log-ts { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+        pre { font-family: 'Cascadia Code', 'Fira Mono', monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; color: #a3e635; }
+        pre.err { color: #fca5a5; }
+        .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
 
-        /* Right panel — output */
-        .output-panel {
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            background: var(--surface);
-        }
-
-        .output-header {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: .05em;
-            color: var(--muted);
-        }
-
-        .status-pill {
-            padding: 2px 8px;
-            border-radius: 99px;
-            font-size: 11px;
-            font-weight: 700;
-            font-family: monospace;
-        }
-        .status-ok  { background: #14532d; color: #86efac; }
-        .status-err { background: #450a0a; color: #fca5a5; }
-        .status-pending { background: #1e3a5f; color: #93c5fd; }
-
-        .output-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 14px;
-        }
-
-        pre {
-            font-family: 'Cascadia Code', 'Fira Mono', monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            color: #a3e635;
-        }
-        pre.error { color: #fca5a5; }
-        pre.info  { color: #93c5fd; }
-
-        .log-entry {
-            border-left: 2px solid var(--border);
-            padding: 6px 10px;
-            margin-bottom: 8px;
-            border-radius: 0 4px 4px 0;
-        }
-        .log-entry.success { border-left-color: var(--green); }
-        .log-entry.failure { border-left-color: var(--red); }
-        .log-entry.info    { border-left-color: var(--accent); }
-
-        .log-ts { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
-
-        .separator { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-
-        /* Tab strip */
-        .tabs {
-            display: flex;
-            gap: 2px;
-            background: var(--code-bg);
-            border-radius: var(--radius);
-            padding: 3px;
-            margin-bottom: 14px;
-        }
-        .tab {
-            flex: 1;
-            padding: 5px 10px;
-            border: none;
-            background: transparent;
-            color: var(--muted);
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 12px;
-            font-weight: 500;
-            transition: background .12s, color .12s;
-        }
-        .tab.active { background: var(--surface); color: var(--text); }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        code {
-            font-family: 'Cascadia Code', 'Fira Mono', monospace;
-            background: var(--code-bg);
-            padding: 1px 5px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #a5b4fc;
-        }
-
-        .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-        .kv-pair { display: flex; gap: 8px; margin-bottom: 6px; }
-        .kv-pair input:first-child { max-width: 130px; }
-        .kv-pair .btn-ghost { padding: 6px 10px; }
-
-        #configStatus {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 12px;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 12px; height: 12px;
-            border: 2px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin .6s linear infinite;
-        }
+        .spinner { display: inline-block; width: 11px; height: 11px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--muted);
-            font-size: 13px;
-        }
+        code { font-family: monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 12px; color: #a5b4fc; }
     </style>
 </head>
 <body>
@@ -340,181 +103,149 @@
 
 <div class="layout">
 
-    <!-- Sidebar -->
     <nav class="sidebar">
-        <div class="sidebar-section">Configuration</div>
-        <div class="sidebar-item active" data-panel="config">
-            <span class="method-badge cfg">CFG</span> Setup
-        </div>
+        <div class="sidebar-section">Config</div>
+        <div class="sidebar-item active" data-panel="config"><span class="mb cfg">CFG</span> Setup</div>
+        <div class="sidebar-item" data-panel="onerror"><span class="mb cfg">ERR</span> onError</div>
 
-        <div class="sidebar-section" style="margin-top:8px">HTTP Methods</div>
-        <div class="sidebar-item" data-panel="get">
-            <span class="method-badge get">GET</span> get()
-        </div>
-        <div class="sidebar-item" data-panel="post">
-            <span class="method-badge post">POST</span> post()
-        </div>
-        <div class="sidebar-item" data-panel="put">
-            <span class="method-badge put">PUT</span> put()
-        </div>
-        <div class="sidebar-item" data-panel="patch">
-            <span class="method-badge patch">PATCH</span> patch()
-        </div>
-        <div class="sidebar-item" data-panel="delete">
-            <span class="method-badge delete">DEL</span> delete()
-        </div>
+        <div class="sidebar-section" style="margin-top:6px">HTTP</div>
+        <div class="sidebar-item" data-panel="get">   <span class="mb get">GET</span>    get()</div>
+        <div class="sidebar-item" data-panel="post">  <span class="mb post">POST</span>   post()</div>
+        <div class="sidebar-item" data-panel="put">   <span class="mb put">PUT</span>    put()</div>
+        <div class="sidebar-item" data-panel="patch"> <span class="mb patch">PATCH</span>  patch()</div>
+        <div class="sidebar-item" data-panel="delete"><span class="mb delete">DEL</span>    delete()</div>
 
-        <div class="sidebar-section" style="margin-top:8px">File Operations</div>
-        <div class="sidebar-item" data-panel="upload">
-            <span class="method-badge upload">UPL</span> upload()
-        </div>
-        <div class="sidebar-item" data-panel="download">
-            <span class="method-badge dl">DL</span> download()
-        </div>
+        <div class="sidebar-section" style="margin-top:6px">Files</div>
+        <div class="sidebar-item" data-panel="upload">  <span class="mb upl">UPL</span> upload()</div>
+        <div class="sidebar-item" data-panel="download"><span class="mb dl">DL</span>  download()</div>
 
-        <div class="sidebar-section" style="margin-top:8px">Namespace</div>
-        <div class="sidebar-item" data-panel="namespace">
-            <span class="method-badge cfg">NS</span> namespace()
-        </div>
+        <div class="sidebar-section" style="margin-top:6px">Scoping</div>
+        <div class="sidebar-item" data-panel="namespace"><span class="mb cfg">NS</span> namespace()</div>
     </nav>
 
-    <!-- Main panel -->
     <div class="main">
 
         <!-- CONFIG -->
-        <div id="panel-config" class="panel-body" style="display:block">
-            <div style="margin-bottom:20px">
-                <h2 style="font-size:15px;font-weight:600;margin-bottom:4px">Client Setup</h2>
-                <p style="font-size:12px;color:var(--muted)">Configure the shared HttpClient instance used by all panels below.</p>
-            </div>
+        <div id="panel-config" class="panel active">
+            <div class="panel-title">Client Setup</div>
+            <div class="panel-desc">Shared instance used by all panels. Changes apply immediately.</div>
 
             <label>Base URL</label>
-            <input id="cfg-baseurl" value="https://jsonplaceholder.typicode.com" placeholder="https://api.example.com" />
+            <input id="cfg-baseurl" value="https://jsonplaceholder.typicode.com" />
 
-            <label style="margin-top:14px">Timeout (ms)</label>
+            <label>Timeout (ms)</label>
             <input id="cfg-timeout" type="number" value="30000" />
 
-            <hr class="separator" />
-            <div class="tabs">
-                <button class="tab active" data-tab="auth-bearer">Bearer Token</button>
-                <button class="tab" data-tab="auth-header">Custom Header</button>
-                <button class="tab" data-tab="auth-static">Static Headers</button>
+            <label>Credentials</label>
+            <select id="cfg-credentials">
+                <option value="same-origin">same-origin (default)</option>
+                <option value="include">include — cross-origin cookies</option>
+                <option value="omit">omit</option>
+            </select>
+
+            <hr class="sep" />
+
+            <label>Auth Headers (JSON)</label>
+            <textarea id="cfg-auth" placeholder='{"Authorization": "Bearer eyJhbGci..."}'></textarea>
+
+            <label>Static Headers (JSON)</label>
+            <textarea id="cfg-static" placeholder='{"X-Tenant-ID": "tenant-123"}'></textarea>
+
+            <div class="row">
+                <button class="btn btn-primary" onclick="applyConfig()">Apply</button>
+                <button class="btn btn-ghost"    onclick="clearAuth()">Clear Auth</button>
+                <button class="btn btn-ghost"    onclick="clearStatic()">Clear Static</button>
             </div>
 
-            <div id="auth-bearer" class="tab-content active">
-                <label>Token</label>
-                <input id="cfg-bearer" placeholder="eyJhbGciOiJIUzI1NiIs..." />
-                <label>Header name</label>
-                <input id="cfg-bearer-header" value="Authorization" />
-                <label>Prefix</label>
-                <input id="cfg-bearer-prefix" value="Bearer" />
-            </div>
+            <div class="pills" id="cfg-status"></div>
+        </div>
 
-            <div id="auth-header" class="tab-content">
-                <label>Header name</label>
-                <input id="cfg-auth-name" placeholder="X-API-Key" />
-                <label>Value</label>
-                <input id="cfg-auth-value" placeholder="my-api-key" />
-            </div>
+        <!-- ON ERROR -->
+        <div id="panel-onerror" class="panel">
+            <div class="panel-title">onError(callback)</div>
+            <div class="panel-desc">Intercept errors before they throw. Call <code>retry()</code> to re-run the original request. Only fires once per request — retries that fail are thrown directly.</div>
 
-            <div id="auth-static" class="tab-content">
-                <label>Static headers (JSON)</label>
-                <textarea id="cfg-static-headers" placeholder='{"X-Tenant-ID": "tenant-123", "X-Version": "1.0"}'></textarea>
+            <label>Simulate error — endpoint that returns this status</label>
+            <input id="onerror-endpoint" value="/posts/999999" />
+
+            <label>Behaviour</label>
+            <select id="onerror-mode">
+                <option value="rethrow">Re-throw — no special handling</option>
+                <option value="retry">Retry once on any error</option>
+                <option value="redirect">Redirect to /login on 404 (simulated)</option>
+            </select>
+
+            <div class="hint">
+                The callback is set on the shared client instance. Clear it after testing to avoid affecting other panels.
             </div>
 
             <div class="row">
-                <button class="btn btn-primary" onclick="applyConfig()">Apply Configuration</button>
-                <button class="btn btn-ghost" onclick="clearAuth()">Clear Auth</button>
-                <button class="btn btn-ghost" onclick="clearStatic()">Clear Static</button>
+                <button class="btn btn-primary" onclick="runOnError()">Run</button>
+                <button class="btn btn-ghost"   onclick="clearOnError()">Clear callback</button>
             </div>
-
-            <div id="configStatus" style="margin-top:14px"></div>
         </div>
 
         <!-- GET -->
-        <div id="panel-get" class="panel-body" style="display:none">
-            <div style="margin-bottom:16px">
-                <h2 style="font-size:15px;font-weight:600">get(endpoint, params?, options?)</h2>
-                <p style="font-size:12px;color:var(--muted);margin-top:3px">Performs a GET request. Query params are serialized via URLSearchParams.</p>
-            </div>
+        <div id="panel-get" class="panel">
+            <div class="panel-title">get(endpoint, params?, options?)</div>
+            <div class="panel-desc">Query params are serialized via URLSearchParams and appended to the URL.</div>
             <label>Endpoint</label>
             <input id="get-endpoint" value="/posts" />
-            <label>Query Parameters (JSON)</label>
-            <textarea id="get-params" placeholder='{"userId": 1, "_limit": 5}'></textarea>
-            <div class="hint">Leave empty for no query params.</div>
-            <label>Per-request timeout override (ms, optional)</label>
-            <input id="get-timeout" placeholder="e.g. 5000" />
-            <div class="row">
-                <button class="btn btn-primary" onclick="runGet()">Send GET</button>
-            </div>
+            <label>Query Params (JSON)</label>
+            <textarea id="get-params" placeholder='{"userId": 1, "_limit": 3}'></textarea>
+            <label>Per-request timeout override (ms)</label>
+            <input id="get-timeout" placeholder="leave empty to use global" />
+            <div class="row"><button class="btn btn-primary" onclick="runGet()">Send GET</button></div>
         </div>
 
         <!-- POST -->
-        <div id="panel-post" class="panel-body" style="display:none">
-            <div style="margin-bottom:16px">
-                <h2 style="font-size:15px;font-weight:600">post(endpoint, data?, options?)</h2>
-                <p style="font-size:12px;color:var(--muted);margin-top:3px">Sends JSON body. Content-Type: application/json.</p>
-            </div>
+        <div id="panel-post" class="panel">
+            <div class="panel-title">post(endpoint, data?, options?)</div>
+            <div class="panel-desc">Sends a JSON body. Content-Type: application/json.</div>
             <label>Endpoint</label>
             <input id="post-endpoint" value="/posts" />
             <label>Body (JSON)</label>
-            <textarea id="post-body" style="min-height:100px">{"title": "Hello World", "body": "Test post", "userId": 1}</textarea>
-            <div class="row">
-                <button class="btn btn-primary" onclick="runPost()">Send POST</button>
-            </div>
+            <textarea id="post-body">{"title": "Hello World", "body": "Test post", "userId": 1}</textarea>
+            <div class="row"><button class="btn btn-primary" onclick="runPost()">Send POST</button></div>
         </div>
 
         <!-- PUT -->
-        <div id="panel-put" class="panel-body" style="display:none">
-            <div style="margin-bottom:16px">
-                <h2 style="font-size:15px;font-weight:600">put(endpoint, data?, options?)</h2>
-                <p style="font-size:12px;color:var(--muted);margin-top:3px">Full replacement update. Sends JSON body.</p>
-            </div>
+        <div id="panel-put" class="panel">
+            <div class="panel-title">put(endpoint, data?, options?)</div>
+            <div class="panel-desc">Full replacement update.</div>
             <label>Endpoint</label>
             <input id="put-endpoint" value="/posts/1" />
             <label>Body (JSON)</label>
-            <textarea id="put-body" style="min-height:100px">{"id": 1, "title": "Updated Title", "body": "Updated body", "userId": 1}</textarea>
-            <div class="row">
-                <button class="btn btn-primary" onclick="runPut()">Send PUT</button>
-            </div>
+            <textarea id="put-body">{"id": 1, "title": "Updated Title", "body": "Updated body", "userId": 1}</textarea>
+            <div class="row"><button class="btn btn-primary" onclick="runPut()">Send PUT</button></div>
         </div>
 
         <!-- PATCH -->
-        <div id="panel-patch" class="panel-body" style="display:none">
-            <div style="margin-bottom:16px">
-                <h2 style="font-size:15px;font-weight:600">patch(endpoint, data?, options?)</h2>
-                <p style="font-size:12px;color:var(--muted);margin-top:3px">Partial update. Only the fields provided are changed.</p>
-            </div>
+        <div id="panel-patch" class="panel">
+            <div class="panel-title">patch(endpoint, data?, options?)</div>
+            <div class="panel-desc">Partial update — only the fields provided are changed.</div>
             <label>Endpoint</label>
             <input id="patch-endpoint" value="/posts/1" />
             <label>Body (JSON)</label>
             <textarea id="patch-body">{"title": "Patched Title"}</textarea>
-            <div class="row">
-                <button class="btn btn-primary" onclick="runPatch()">Send PATCH</button>
-            </div>
+            <div class="row"><button class="btn btn-primary" onclick="runPatch()">Send PATCH</button></div>
         </div>
 
         <!-- DELETE -->
-        <div id="panel-delete" class="panel-body" style="display:none">
-            <div style="margin-bottom:16px">
-                <h2 style="font-size:15px;font-weight:600">delete(endpoint, data?, options?)</h2>
-                <p style="font-size:12px;color:var(--muted);margin-top:3px">Deletes a resource. Optional JSON body for DELETE-with-body scenarios.</p>
-            </div>
+        <div id="panel-delete" class="panel">
+            <div class="panel-title">delete(endpoint, data?, options?)</div>
+            <div class="panel-desc">Optional JSON body for DELETE-with-body scenarios.</div>
             <label>Endpoint</label>
             <input id="delete-endpoint" value="/posts/1" />
             <label>Body (JSON, optional)</label>
-            <textarea id="delete-body" placeholder="Leave empty for no body"></textarea>
-            <div class="row">
-                <button class="btn btn-primary" onclick="runDelete()">Send DELETE</button>
-            </div>
+            <textarea id="delete-body" placeholder="leave empty for no body"></textarea>
+            <div class="row"><button class="btn btn-primary" onclick="runDelete()">Send DELETE</button></div>
         </div>
 
         <!-- UPLOAD -->
-        <div id="panel-upload" class="panel-body" style="display:none">
-            <div style="margin-bottom:16px">
-                <h2 style="font-size:15px;font-weight:600">upload(endpoint, formData, options?)</h2>
-                <p style="font-size:12px;color:var(--muted);margin-top:3px">Multipart POST. Content-Type is omitted so the browser sets the boundary automatically.</p>
-            </div>
+        <div id="panel-upload" class="panel">
+            <div class="panel-title">upload(endpoint, formData, options?)</div>
+            <div class="panel-desc">Multipart POST. Content-Type is omitted so the browser sets the boundary automatically.</div>
             <label>Endpoint</label>
             <input id="upload-endpoint" value="/upload-demo" />
             <label>File</label>
@@ -523,40 +254,30 @@
             <input id="upload-field-name" value="description" />
             <label>Extra field value</label>
             <input id="upload-field-value" value="Test upload" />
-            <div class="hint" style="margin-top:8px">
-                Note: <code>jsonplaceholder.typicode.com</code> does not accept real uploads — this demonstrates the FormData construction and shows the outgoing request headers. Use your own endpoint for actual uploads.
-            </div>
-            <div class="row">
-                <button class="btn btn-primary" onclick="runUpload()">Build &amp; Send Upload</button>
-            </div>
+            <div class="hint">jsonplaceholder does not accept real uploads — this demonstrates FormData construction and outgoing headers.</div>
+            <div class="row"><button class="btn btn-primary" onclick="runUpload()">Send Upload</button></div>
         </div>
 
         <!-- DOWNLOAD -->
-        <div id="panel-download" class="panel-body" style="display:none">
-            <div style="margin-bottom:16px">
-                <h2 style="font-size:15px;font-weight:600">download(endpoint, params?, filename?, options?)</h2>
-                <p style="font-size:12px;color:var(--muted);margin-top:3px">GET that receives a Blob and triggers a browser file-save. Filename can be explicit or inferred from Content-Disposition.</p>
-            </div>
+        <div id="panel-download" class="panel">
+            <div class="panel-title">download(endpoint, params?, filename?, options?)</div>
+            <div class="panel-desc">GET that receives a Blob and triggers a browser file-save. Filename from Content-Disposition or explicit override.</div>
             <label>Endpoint (full URL or path)</label>
             <input id="dl-endpoint" value="https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF1.pdf" />
-            <label>Query params (JSON, optional)</label>
+            <label>Query Params (JSON, optional)</label>
             <textarea id="dl-params" placeholder='{"format": "csv"}'></textarea>
             <label>Filename override (optional)</label>
-            <input id="dl-filename" placeholder="report.pdf — leave empty to auto-detect" />
-            <div class="hint">Saving will be triggered by the browser. Check your Downloads folder.</div>
-            <div class="row">
-                <button class="btn btn-primary" onclick="runDownload()">Download File</button>
-            </div>
+            <input id="dl-filename" placeholder="leave empty to auto-detect from Content-Disposition" />
+            <div class="hint">File will be saved to your Downloads folder.</div>
+            <div class="row"><button class="btn btn-primary" onclick="runDownload()">Download</button></div>
         </div>
 
         <!-- NAMESPACE -->
-        <div id="panel-namespace" class="panel-body" style="display:none">
-            <div style="margin-bottom:16px">
-                <h2 style="font-size:15px;font-weight:600">namespace(prefix)</h2>
-                <p style="font-size:12px;color:var(--muted);margin-top:3px">Returns a Proxy that prepends a path segment to every HTTP call. All methods (get, post, put, …) are available on the returned object.</p>
-            </div>
+        <div id="panel-namespace" class="panel">
+            <div class="panel-title">namespace(prefix)</div>
+            <div class="panel-desc">Returns a proxy that prepends a path segment to every HTTP call.</div>
             <label>Namespace prefix</label>
-            <input id="ns-prefix" value="users" />
+            <input id="ns-prefix" value="posts" />
             <label>Endpoint (appended after prefix)</label>
             <input id="ns-endpoint" value="/1" />
             <label>Method</label>
@@ -569,24 +290,22 @@
             </select>
             <label>Body (JSON, for non-GET)</label>
             <textarea id="ns-body" placeholder='{"title": "test"}'></textarea>
-            <div class="row">
-                <button class="btn btn-primary" onclick="runNamespace()">Send via namespace()</button>
-            </div>
+            <div class="row"><button class="btn btn-primary" onclick="runNamespace()">Send</button></div>
         </div>
 
     </div>
 
-    <!-- Output panel -->
+    <!-- Output -->
     <div class="output-panel">
         <div class="output-header">
             <span>Response</span>
             <div style="display:flex;gap:8px;align-items:center">
                 <span id="status-pill"></span>
-                <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="clearLog()">Clear</button>
+                <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="clearOutput()">Clear</button>
             </div>
         </div>
         <div class="output-body" id="output">
-            <div class="empty-state">Run a request to see the response here.</div>
+            <div class="empty">Run a request to see the response.</div>
         </div>
     </div>
 
@@ -595,232 +314,201 @@
 <script type="module">
     import HttpClient from './httpclient.js';
 
-    // Shared instance
     let client = new HttpClient('https://jsonplaceholder.typicode.com');
-    window._client = client; // expose for non-module onclick handlers
+    window._client = client;
 
-    // ──────────────────────────────────────────────
-    // Panel / Tab switching
-    // ──────────────────────────────────────────────
+    // ── Navigation ──────────────────────────────────────────
     document.querySelectorAll('.sidebar-item').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             item.classList.add('active');
-            const target = item.dataset.panel;
-            document.querySelectorAll('.panel-body').forEach(p => p.style.display = 'none');
-            document.getElementById('panel-' + target).style.display = 'block';
+            document.getElementById('panel-' + item.dataset.panel).classList.add('active');
         });
     });
 
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            const parent = tab.closest('.tabs').parentElement;
-            parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            parent.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            tab.classList.add('active');
-            parent.querySelector('#' + tab.dataset.tab).classList.add('active');
-        });
-    });
-
-    // ──────────────────────────────────────────────
-    // Output helpers
-    // ──────────────────────────────────────────────
-    function setStatus(code, ok) {
-        const pill = document.getElementById('status-pill');
-        pill.className = 'status-pill ' + (ok ? 'status-ok' : 'status-err');
-        pill.textContent = code;
-    }
-
+    // ── Output helpers ───────────────────────────────────────
     function setLoading() {
+        document.getElementById('status-pill').className = 'status-pill pending';
+        document.getElementById('status-pill').innerHTML = '<span class="spinner"></span>';
+        document.getElementById('output').innerHTML = '<div class="empty"><span class="spinner"></span> Sending…</div>';
+    }
+
+    function renderResult(data, isErr = false) {
         const pill = document.getElementById('status-pill');
-        pill.className = 'status-pill status-pending';
-        pill.innerHTML = '<span class="spinner"></span>';
-        document.getElementById('output').innerHTML =
-            '<div class="empty-state"><span class="spinner"></span> Sending…</div>';
-    }
+        pill.className = 'status-pill ' + (isErr ? 'err' : 'ok');
+        pill.textContent = isErr ? (data.status ? `${data.status} ERR` : 'ERR') : 'OK';
 
-    function renderResult(data, isError = false) {
-        const out = document.getElementById('output');
-        const ts = new Date().toLocaleTimeString();
-        const entry = document.createElement('div');
-        entry.className = 'log-entry ' + (isError ? 'failure' : 'success');
+        const el = document.createElement('div');
+        el.className = 'log ' + (isErr ? 'failure' : 'success');
+        el.innerHTML = `<div class="log-ts">${new Date().toLocaleTimeString()}</div>`;
         const pre = document.createElement('pre');
-        pre.className = isError ? 'error' : '';
+        pre.className = isErr ? 'err' : '';
         pre.textContent = JSON.stringify(data, null, 2);
-        const ts_el = document.createElement('div');
-        ts_el.className = 'log-ts';
-        ts_el.textContent = ts;
-        entry.appendChild(ts_el);
-        entry.appendChild(pre);
+        el.appendChild(pre);
+        const out = document.getElementById('output');
         out.innerHTML = '';
-        out.appendChild(entry);
+        out.appendChild(el);
     }
 
-    window.clearLog = () => {
-        document.getElementById('output').innerHTML =
-            '<div class="empty-state">Run a request to see the response here.</div>';
+    window.clearOutput = () => {
+        document.getElementById('output').innerHTML = '<div class="empty">Run a request to see the response.</div>';
         document.getElementById('status-pill').className = '';
         document.getElementById('status-pill').textContent = '';
     };
 
-    async function run(fn, label) {
+    async function run(fn) {
         setLoading();
         try {
-            const result = await fn();
-            setStatus('200 OK', true);
-            renderResult(result);
+            renderResult(await fn());
         } catch (err) {
-            setStatus(err.status ? `${err.status} ERR` : 'ERR', false);
-            renderResult({
-                name: err.name,
-                message: err.message,
-                status: err.status,
-                data: err.data,
-                url: err.url,
-            }, true);
+            renderResult({ name: err.name, message: err.message, status: err.status, data: err.data, url: err.url }, true);
         }
     }
 
-    function parseJSON(str, fallback = {}) {
-        if (!str || !str.trim()) return fallback;
+    function json(str, fallback = {}) {
+        if (!str?.trim()) return fallback;
         try { return JSON.parse(str); } catch { return fallback; }
     }
 
-    // ──────────────────────────────────────────────
-    // Config
-    // ──────────────────────────────────────────────
+    // ── Config ───────────────────────────────────────────────
     window.applyConfig = () => {
-        const baseURL = document.getElementById('cfg-baseurl').value.trim();
-        const timeout = parseInt(document.getElementById('cfg-timeout').value) || 30000;
+        const baseURL      = document.getElementById('cfg-baseurl').value.trim();
+        const timeout      = parseInt(document.getElementById('cfg-timeout').value) || 30000;
+        const credentials  = document.getElementById('cfg-credentials').value;
+        const authHeaders  = json(document.getElementById('cfg-auth').value, null);
+        const staticHeaders = json(document.getElementById('cfg-static').value, null);
 
-        client = new HttpClient(baseURL, { timeout });
+        client = new HttpClient(baseURL, { timeout, credentials });
         window._client = client;
 
-        // Auth
-        const activeTab = document.querySelector('#panel-config .tab.active')?.dataset.tab;
-        if (activeTab === 'auth-bearer') {
-            const token = document.getElementById('cfg-bearer').value.trim();
-            if (token) {
-                const hdr = document.getElementById('cfg-bearer-header').value || 'Authorization';
-                const pre = document.getElementById('cfg-bearer-prefix').value || 'Bearer';
-                client.setBearerToken(token, hdr, pre);
-            }
-        } else if (activeTab === 'auth-header') {
-            const name = document.getElementById('cfg-auth-name').value.trim();
-            const val  = document.getElementById('cfg-auth-value').value.trim();
-            if (name) client.setAuthHeader(name, val);
-        } else if (activeTab === 'auth-static') {
-            const hdrs = parseJSON(document.getElementById('cfg-static-headers').value, null);
-            if (hdrs) client.setStaticHeaders(hdrs);
-        }
+        if (authHeaders)   client.setAuthHeaders(authHeaders);
+        if (staticHeaders) client.setStaticHeaders(staticHeaders);
 
-        refreshConfigStatus();
+        refreshStatus();
     };
 
-    window.clearAuth = () => {
-        client.clearAuth();
-        refreshConfigStatus();
-    };
+    window.clearAuth   = () => { client.clearAuthHeaders();   refreshStatus(); };
+    window.clearStatic = () => { client.clearStaticHeaders(); refreshStatus(); };
 
-    window.clearStatic = () => {
-        client.clearStaticHeaders();
-        refreshConfigStatus();
-    };
-
-    function refreshConfigStatus() {
-        const el = document.getElementById('configStatus');
-        const items = [];
-
-        items.push(`<span class="config-badge active"><span class="dot active"></span>base: ${client.baseURL}</span>`);
-        items.push(`<span class="config-badge active"><span class="dot active"></span>timeout: ${client.options.timeout}ms</span>`);
-
-        const authKeys = Object.keys(client.options.authHeaders);
-        if (authKeys.length) {
-            items.push(`<span class="config-badge active"><span class="dot active"></span>auth: ${authKeys.join(', ')}</span>`);
-        } else {
-            items.push(`<span class="config-badge"><span class="dot"></span>auth: none</span>`);
-        }
-
-        const staticKeys = Object.keys(client.options.staticHeaders);
-        if (staticKeys.length) {
-            items.push(`<span class="config-badge active"><span class="dot active"></span>static: ${staticKeys.join(', ')}</span>`);
-        }
-
+    function refreshStatus() {
+        const el = document.getElementById('cfg-status');
+        const o  = client.options;
+        const items = [
+            `<span class="pill on"><span class="dot"></span>${client.baseURL}</span>`,
+            `<span class="pill on"><span class="dot"></span>timeout: ${o.timeout}ms</span>`,
+            `<span class="pill ${o.credentials !== 'same-origin' ? 'on' : ''}"><span class="dot"></span>creds: ${o.credentials}</span>`,
+        ];
+        const authKeys   = Object.keys(o.authHeaders);
+        const staticKeys = Object.keys(o.staticHeaders);
+        if (authKeys.length)   items.push(`<span class="pill on"><span class="dot"></span>auth: ${authKeys.join(', ')}</span>`);
+        if (staticKeys.length) items.push(`<span class="pill on"><span class="dot"></span>static: ${staticKeys.join(', ')}</span>`);
+        if (o.onError) items.push(`<span class="pill on"><span class="dot"></span>onError: set</span>`);
         el.innerHTML = items.join('');
     }
 
-    // ──────────────────────────────────────────────
-    // HTTP Methods
-    // ──────────────────────────────────────────────
+    // ── onError ──────────────────────────────────────────────
+    window.runOnError = () => {
+        const endpoint = document.getElementById('onerror-endpoint').value;
+        const mode     = document.getElementById('onerror-mode').value;
+
+        if (mode === 'rethrow') {
+            client.options.onError = null;
+        } else if (mode === 'retry') {
+            client.onError(async (err, retry) => {
+                renderResult({ info: `onError fired — status ${err.status}, retrying once…` });
+                await new Promise(r => setTimeout(r, 600));
+                return retry();
+            });
+        } else if (mode === 'redirect') {
+            client.onError(async (err) => {
+                if (err.status === 404) {
+                    renderResult({ info: 'onError fired — 404 detected, would redirect to /login' });
+                    return { redirected: true };
+                }
+                throw err;
+            });
+        }
+
+        refreshStatus();
+        run(() => client.get(endpoint));
+    };
+
+    window.clearOnError = () => {
+        client.options.onError = null;
+        refreshStatus();
+    };
+
+    // ── HTTP methods ─────────────────────────────────────────
     window.runGet = () => {
         const endpoint = document.getElementById('get-endpoint').value;
-        const params   = parseJSON(document.getElementById('get-params').value);
-        const to       = parseInt(document.getElementById('get-timeout').value) || undefined;
-        const opts     = to ? { timeout: to } : {};
-        run(() => client.get(endpoint, params, opts));
+        const params   = json(document.getElementById('get-params').value);
+        const timeout  = parseInt(document.getElementById('get-timeout').value) || undefined;
+        run(() => client.get(endpoint, params, timeout ? { timeout } : {}));
     };
 
     window.runPost = () => {
-        const endpoint = document.getElementById('post-endpoint').value;
-        const body     = parseJSON(document.getElementById('post-body').value);
-        run(() => client.post(endpoint, body));
+        run(() => client.post(
+            document.getElementById('post-endpoint').value,
+            json(document.getElementById('post-body').value)
+        ));
     };
 
     window.runPut = () => {
-        const endpoint = document.getElementById('put-endpoint').value;
-        const body     = parseJSON(document.getElementById('put-body').value);
-        run(() => client.put(endpoint, body));
+        run(() => client.put(
+            document.getElementById('put-endpoint').value,
+            json(document.getElementById('put-body').value)
+        ));
     };
 
     window.runPatch = () => {
-        const endpoint = document.getElementById('patch-endpoint').value;
-        const body     = parseJSON(document.getElementById('patch-body').value);
-        run(() => client.patch(endpoint, body));
+        run(() => client.patch(
+            document.getElementById('patch-endpoint').value,
+            json(document.getElementById('patch-body').value)
+        ));
     };
 
     window.runDelete = () => {
-        const endpoint = document.getElementById('delete-endpoint').value;
-        const raw      = document.getElementById('delete-body').value.trim();
-        const body     = raw ? parseJSON(raw) : null;
-        run(() => client.delete(endpoint, body));
+        const body = document.getElementById('delete-body').value.trim();
+        run(() => client.delete(
+            document.getElementById('delete-endpoint').value,
+            body ? json(body) : null
+        ));
     };
 
     window.runUpload = () => {
-        const endpoint  = document.getElementById('upload-endpoint').value;
-        const fileInput = document.getElementById('upload-file');
-        const fieldName = document.getElementById('upload-field-name').value;
-        const fieldVal  = document.getElementById('upload-field-value').value;
-
         const formData = new FormData();
-        if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
-        if (fieldName) formData.append(fieldName, fieldVal);
-
-        run(() => client.upload(endpoint, formData));
+        const file     = document.getElementById('upload-file').files[0];
+        const name     = document.getElementById('upload-field-name').value;
+        const val      = document.getElementById('upload-field-value').value;
+        if (file) formData.append('file', file);
+        if (name) formData.append(name, val);
+        run(() => client.upload(document.getElementById('upload-endpoint').value, formData));
     };
 
     window.runDownload = () => {
-        const endpoint = document.getElementById('dl-endpoint').value;
-        const params   = parseJSON(document.getElementById('dl-params').value);
-        const fname    = document.getElementById('dl-filename').value.trim() || null;
-        run(() => client.download(endpoint, params, fname));
+        run(() => client.download(
+            document.getElementById('dl-endpoint').value,
+            json(document.getElementById('dl-params').value),
+            document.getElementById('dl-filename').value.trim() || null
+        ));
     };
 
-    // ──────────────────────────────────────────────
-    // Namespace
-    // ──────────────────────────────────────────────
+    // ── namespace ────────────────────────────────────────────
     window.runNamespace = () => {
         const prefix   = document.getElementById('ns-prefix').value;
         const endpoint = document.getElementById('ns-endpoint').value;
         const method   = document.getElementById('ns-method').value;
-        const body     = parseJSON(document.getElementById('ns-body').value);
+        const body     = json(document.getElementById('ns-body').value, null);
         const scoped   = client.namespace(prefix);
         run(() => method === 'get' || method === 'delete'
-            ? scoped[method](endpoint, body && Object.keys(body).length ? body : null)
-            : scoped[method](endpoint, body));
+            ? scoped[method](endpoint)
+            : scoped[method](endpoint, body)
+        );
     };
 
     // Init
-    refreshConfigStatus();
+    refreshStatus();
 </script>
 </body>
 </html>

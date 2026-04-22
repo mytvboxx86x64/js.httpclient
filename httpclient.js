@@ -4,14 +4,10 @@ export default class HttpClient {
         this.options = {
             timeout:       options.timeout      ?? 30000,
             credentials:   options.credentials  ?? "same-origin",
-            authHeaders:   {},
+            authHeaders:   options.authHeaders ?? {},
             staticHeaders: options.staticHeaders ?? {},
             onError:       null,
         };
-
-        if (options.authHeaders) {
-            this.setAuthHeaders(options.authHeaders);
-        }
     }
 
     setTimeout(ms) {
@@ -31,31 +27,8 @@ export default class HttpClient {
     }
 
     /**
-     * Set the Authorization header with an optional scheme prefix
-     * @example api.setAuthToken('eyJhbGci...')              // Authorization: Bearer eyJhbGci...
-     * @example api.setAuthToken('abc123', 'Token')          // Authorization: Token abc123
-     * @example api.setAuthToken('abc123', '')               // Authorization: abc123
-     */
-    setAuthToken(token, prefix = "Bearer") {
-        this.options.authHeaders = {
-            ...this.options.authHeaders,
-            Authorization: prefix ? `${prefix} ${token}` : token,
-        };
-        return this;
-    }
-
-    /**
-     * Set custom header authentication
-     * @example api.setAuthHeader('X-API-Key', 'my-key')
-     * // -> X-API-Key: my-key
-     */
-    setAuthHeader(headerName, value) {
-        this.options.authHeaders = { ...this.options.authHeaders, [headerName]: value };
-        return this;
-    }
-
-    /**
-     * Set multiple authentication headers
+     * Set authentication headers
+     * @example api.setAuthHeaders({ 'Authorization': 'Bearer token' })
      * @example api.setAuthHeaders({ 'Authorization': 'Bearer token', 'X-Refresh': 'refresh' })
      */
     setAuthHeaders(headers) {
@@ -63,13 +36,8 @@ export default class HttpClient {
         return this;
     }
 
-    clearAuth() {
+    clearAuthHeaders() {
         this.options.authHeaders = {};
-        return this;
-    }
-
-    setStaticHeader(headerName, value) {
-        this.options.staticHeaders = { ...this.options.staticHeaders, [headerName]: value };
         return this;
     }
 
@@ -281,8 +249,8 @@ export default class HttpClient {
 
         const nonRoutingMethods = new Set([
             'constructor', 'setTimeout', 'setCredentials', 'onError',
-            'setAuthToken', 'setAuthHeader', 'setAuthHeaders', 'clearAuth',
-            'setStaticHeader', 'setStaticHeaders', 'clearStaticHeaders',
+            'setAuthHeaders', 'clearAuth',
+            'setStaticHeaders', 'clearStaticHeaders',
             'buildHeaders', 'buildURL', 'handleResponse', 'namespace',
         ]);
 

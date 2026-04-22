@@ -172,40 +172,17 @@ Returns `{ filename, size }` after triggering the browser download.
 
 ## Authentication
 
-### Token (Authorization header)
+### Auth Headers
 
 ```javascript
-httpclient.setAuthToken('eyJhbGciOiJIUzI1NiIs...');
-// -> Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+// Single
+httpclient.setAuthHeaders({ 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIs...' });
+httpclient.setAuthHeaders({ 'X-API-Key': 'my-key' });
 
-httpclient.setAuthToken('abc123', 'Token');
-// -> Authorization: Token abc123
-
-httpclient.setAuthToken('abc123', '');
-// -> Authorization: abc123
-```
-
-### Custom Auth Header
-
-Merges into existing auth headers rather than replacing them.
-
-```javascript
-httpclient.setAuthHeader('X-HttpClient-Key', 'my-api-key');
-// -> X-HttpClient-Key: my-api-key
-
-// Calling twice accumulates — does not overwrite previous keys
-httpclient.setAuthHeader('X-Tenant', 'tenant-123');
-// Both X-HttpClient-Key and X-Tenant are now set
-```
-
-### Multiple Auth Headers
-
-Merges into existing auth headers rather than replacing them.
-
-```javascript
+// Multiple
 httpclient.setAuthHeaders({
-    'Authorization': 'Bearer access-token',
-    'X-Refresh-Token': 'refresh-token'
+    'Authorization':   'Bearer access-token',
+    'X-Refresh-Token': 'refresh-token',
 });
 ```
 
@@ -213,19 +190,19 @@ httpclient.setAuthHeaders({
 
 ```javascript
 // Single
-httpclient.setStaticHeader('X-Tenant-ID', 'tenant-123');
+httpclient.setStaticHeaders({ 'X-Tenant-ID': 'tenant-123' });
 
 // Multiple
 httpclient.setStaticHeaders({
     'X-Tenant-ID': 'tenant-123',
-    'X-Client-Version': '1.0.0'
+    'X-Client-Version': '1.0.0',
 });
 ```
 
 ### Clear Authentication
 
 ```javascript
-httpclient.clearAuth();           // Remove all auth headers
+httpclient.clearAuthHeaders();           // Remove all auth headers
 httpclient.clearStaticHeaders();  // Remove all static headers
 ```
 
@@ -237,7 +214,7 @@ Register a callback to intercept errors before they are thrown. The callback rec
 httpclient.onError(async (error, retry) => {
     if (error.status === 401) {
         const newToken = await myAuthService.refreshToken();
-        httpclient.setAuthToken(newToken);
+        httpclient.setAuthHeaders({ Authorization: `Bearer ${newToken}` });
         return retry();
     }
     throw error; // re-throw anything you don't handle
@@ -317,14 +294,14 @@ try {
 
 ## Method Chaining
 
-Configuration methods return `this` for chaining:
+Configuration methods return `this` so they can be chained:
 
 ```javascript
-const api = new HttpClient('https://api.example.com', {
-    timeout:       60000,
-    bearerToken:   token,
-    staticHeaders: { 'X-Tenant': 'foo' },
-});
+const httpclient = new HttpClient('https://api.example.com')
+    .setTimeout(60000)
+    .setCredentials('include')
+    .setAuthHeaders({ Authorization: `Bearer ${token}` })
+    .setStaticHeaders({ 'X-Tenant': 'foo' });
 ```
 
 ## Full URL Support
